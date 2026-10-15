@@ -1,26 +1,816 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ==========================================================================
+   Design System — Fleet Tracking
+   Tailwind CSS v4 (@theme inline) + CSS custom properties
+   ========================================================================== */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* ── Polices ─────────────────────────────────────────────────── */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* ── Palette principale (bleu ardoise profond) ───────────────── */
+  --color-brand-50:  #eef2ff;
+  --color-brand-100: #e0e7ff;
+  --color-brand-200: #c7d2fe;
+  --color-brand-300: #a5b4fc;
+  --color-brand-400: #818cf8;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #4f46e5;
+  --color-brand-700: #4338ca;
+  --color-brand-800: #3730a3;
+  --color-brand-900: #312e81;
+
+  /* ── Surface (dark mode par défaut) ─────────────────────────── */
+  --color-surface-900: #0f0f1a;
+  --color-surface-800: #16162a;
+  --color-surface-700: #1e1e35;
+  --color-surface-600: #2a2a45;
+  --color-surface-400: #5a5a8a;
+  --color-surface-200: #a0a0c0;
+  --color-surface-100: #e8e8f0;
+
+  /* ── Statuts document ────────────────────────────────────────── */
+  --color-status-valid:   #10b981;  /* emerald-500 */
+  --color-status-alert:   #f59e0b;  /* amber-500  */
+  --color-status-expired: #ef4444;  /* red-500    */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  height: 100%;
+  margin: 0;
+  background-color: var(--color-surface-900);
+  color: var(--color-surface-100);
+  font-family: var(--font-sans), system-ui, sans-serif;
 }
+
+/* ==========================================================================
+   Shell d'application
+   ========================================================================== */
+
+.app-shell {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ==========================================================================
+   Sidebar
+   ========================================================================== */
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  width: 260px;
+  flex-shrink: 0;
+  background-color: var(--color-surface-800);
+  border-right: 1px solid color-mix(in srgb, var(--color-brand-500) 15%, transparent);
+  padding: 1.5rem 1rem;
+  gap: 1.5rem;
+  overflow-y: auto;
+}
+
+/* — En-tête logo ————————————————————————— */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 0.5rem 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-surface-600) 60%, transparent);
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.625rem;
+  background: linear-gradient(135deg, var(--color-brand-600), var(--color-brand-400));
+  flex-shrink: 0;
+  box-shadow: 0 0 16px color-mix(in srgb, var(--color-brand-500) 40%, transparent);
+}
+
+.sidebar-logo-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #fff;
+}
+
+.sidebar-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.sidebar-brand-name {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-surface-100);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-brand-sub {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--color-surface-400);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* — Navigation ——————————————————————————— */
+.sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar-section-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-surface-400);
+  padding: 0 0.75rem;
+  margin: 0 0 0.25rem;
+}
+
+.sidebar-nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-surface-200);
+  transition: background-color 150ms ease, color 150ms ease;
+  position: relative;
+}
+
+.sidebar-nav-item:hover {
+  background-color: color-mix(in srgb, var(--color-brand-500) 10%, transparent);
+  color: var(--color-surface-100);
+}
+
+.sidebar-nav-item--active {
+  background-color: color-mix(in srgb, var(--color-brand-500) 18%, transparent);
+  color: var(--color-brand-300);
+}
+
+.sidebar-nav-item--active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 20%;
+  height: 60%;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--color-brand-400);
+}
+
+.sidebar-nav-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+  transition: transform 150ms ease;
+}
+
+.sidebar-nav-item:hover .sidebar-nav-icon {
+  transform: translateX(1px);
+}
+
+.sidebar-nav-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-nav-chevron {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+  color: var(--color-brand-400);
+  opacity: 0.7;
+}
+
+/* — Pied sidebar ————————————————————————— */
+.sidebar-footer {
+  padding-top: 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-surface-600) 60%, transparent);
+}
+
+.sidebar-logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.5rem;
+  border: none;
+  background: transparent;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-surface-400);
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+  text-align: left;
+}
+
+.sidebar-logout-btn:hover {
+  background-color: color-mix(in srgb, #ef4444 12%, transparent);
+  color: #f87171;
+}
+
+.sidebar-logout-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Zone de contenu principale
+   ========================================================================== */
+
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* En-tête de page */
+.page-header {
+  padding: 2rem 2.5rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-surface-600) 40%, transparent);
+  padding-bottom: 1.5rem;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-surface-100);
+  margin: 0 0 0.25rem;
+}
+
+.page-subtitle {
+  font-size: 0.875rem;
+  color: var(--color-surface-400);
+  margin: 0;
+}
+
+/* Conteneur de page */
+.page-body {
+  flex: 1;
+  padding: 2rem 2.5rem;
+}
+
+/* ==========================================================================
+   Badges de statut document
+   ========================================================================== */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.badge--valid {
+  background-color: color-mix(in srgb, var(--color-status-valid) 15%, transparent);
+  color: var(--color-status-valid);
+  border: 1px solid color-mix(in srgb, var(--color-status-valid) 30%, transparent);
+}
+
+.badge--alert {
+  background-color: color-mix(in srgb, var(--color-status-alert) 15%, transparent);
+  color: var(--color-status-alert);
+  border: 1px solid color-mix(in srgb, var(--color-status-alert) 30%, transparent);
+}
+
+.badge--expired {
+  background-color: color-mix(in srgb, var(--color-status-expired) 15%, transparent);
+  color: var(--color-status-expired);
+  border: 1px solid color-mix(in srgb, var(--color-status-expired) 30%, transparent);
+}
+
+/* ==========================================================================
+   Cartes
+   ========================================================================== */
+
+.card {
+  background-color: var(--color-surface-800);
+  border: 1px solid color-mix(in srgb, var(--color-surface-600) 50%, transparent);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.card:hover {
+  border-color: color-mix(in srgb, var(--color-brand-500) 30%, transparent);
+  box-shadow: 0 4px 24px color-mix(in srgb, var(--color-brand-900) 30%, transparent);
+}
+
+/* ==========================================================================
+   Formulaires
+   ========================================================================== */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.form-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-surface-200);
+  letter-spacing: 0.01em;
+}
+
+.form-label--required::after {
+  content: ' *';
+  color: var(--color-status-expired);
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--color-surface-600) 70%, transparent);
+  background-color: var(--color-surface-700);
+  color: var(--color-surface-100);
+  font-size: 0.875rem;
+  font-family: inherit;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+  outline: none;
+  color-scheme: dark;
+}
+
+.form-input::placeholder {
+  color: var(--color-surface-400);
+}
+
+.form-input:focus {
+  border-color: var(--color-brand-500);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-500) 20%, transparent);
+}
+
+.form-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.form-file-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  border-radius: 0.625rem;
+  border: 2px dashed color-mix(in srgb, var(--color-surface-600) 70%, transparent);
+  background-color: var(--color-surface-700);
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease;
+  text-align: center;
+}
+
+.form-file-label:hover {
+  border-color: var(--color-brand-500);
+  background-color: color-mix(in srgb, var(--color-brand-500) 5%, var(--color-surface-700));
+}
+
+.form-file-label--has-file {
+  border-color: var(--color-brand-500);
+  border-style: solid;
+}
+
+.form-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.form-file-icon {
+  width: 2rem;
+  height: 2rem;
+  color: var(--color-brand-400);
+}
+
+.form-file-text {
+  font-size: 0.875rem;
+  color: var(--color-surface-200);
+}
+
+.form-file-text strong {
+  color: var(--color-brand-300);
+}
+
+.form-file-hint {
+  font-size: 0.75rem;
+  color: var(--color-surface-400);
+}
+
+.form-image-preview {
+  width: 100%;
+  max-height: 180px;
+  object-fit: cover;
+  border-radius: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.form-section-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-surface-400);
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-surface-600) 50%, transparent);
+  margin: 0;
+}
+
+.form-dates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.form-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.form-alert--success {
+  background-color: color-mix(in srgb, var(--color-status-valid) 12%, transparent);
+  color: var(--color-status-valid);
+  border: 1px solid color-mix(in srgb, var(--color-status-valid) 25%, transparent);
+}
+
+.form-alert--error {
+  background-color: color-mix(in srgb, var(--color-status-expired) 12%, transparent);
+  color: #f87171;
+  border: 1px solid color-mix(in srgb, var(--color-status-expired) 25%, transparent);
+}
+
+.form-alert-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  border: none;
+  background: linear-gradient(135deg, var(--color-brand-600), var(--color-brand-500));
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 150ms ease, box-shadow 150ms ease, transform 100ms ease;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-brand-600) 40%, transparent);
+}
+
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.92;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--color-brand-600) 50%, transparent);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   Badge renewed
+   ========================================================================== */
+
+.badge--renewed {
+  background-color: color-mix(in srgb, var(--color-surface-400) 15%, transparent);
+  color: var(--color-surface-400);
+  border: 1px solid color-mix(in srgb, var(--color-surface-400) 25%, transparent);
+}
+
+/* ==========================================================================
+   Page de connexion
+   ========================================================================== */
+
+.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: var(--color-surface-900);
+  padding: 1.5rem;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background-color: var(--color-surface-800);
+  border: 1px solid color-mix(in srgb, var(--color-surface-600) 50%, transparent);
+  border-radius: 1rem;
+  padding: 2.5rem;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.3),
+    0 0 80px color-mix(in srgb, var(--color-brand-900) 15%, transparent);
+}
+
+.login-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.login-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 0.875rem;
+  background: linear-gradient(135deg, var(--color-brand-600), var(--color-brand-400));
+  box-shadow: 0 0 24px color-mix(in srgb, var(--color-brand-500) 40%, transparent);
+}
+
+.login-logo-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: #fff;
+}
+
+.login-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-surface-100);
+  margin: 0;
+}
+
+.login-subtitle {
+  font-size: 0.875rem;
+  color: var(--color-surface-400);
+  margin: 0;
+}
+
+/* ==========================================================================
+   Tableau de bord — grille de véhicules
+   ========================================================================== */
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.dashboard-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 0.75rem;
+  text-align: center;
+  color: var(--color-surface-400);
+}
+
+.dashboard-empty-icon {
+  width: 3rem;
+  height: 3rem;
+  opacity: 0.4;
+}
+
+.dashboard-empty-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-surface-200);
+}
+
+.dashboard-empty-text {
+  margin: 0;
+  font-size: 0.875rem;
+  max-width: 28rem;
+}
+
+.vehicle-card {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.vehicle-card--skeleton {
+  min-height: 360px;
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-800) 0%,
+    var(--color-surface-700) 50%,
+    var(--color-surface-800) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+.vehicle-card-image-wrap {
+  position: relative;
+  height: 180px;
+  background-color: var(--color-surface-700);
+}
+
+.vehicle-card-image {
+  object-fit: cover;
+}
+
+.vehicle-card-image-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--color-surface-400);
+}
+
+.vehicle-card-image-fallback svg {
+  width: 3rem;
+  height: 3rem;
+  opacity: 0.45;
+}
+
+.vehicle-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.vehicle-card-name {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-surface-100);
+}
+
+.document-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.document-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem 0.875rem;
+  border-radius: 0.5rem;
+  background-color: var(--color-surface-700);
+  border: 1px solid color-mix(in srgb, var(--color-surface-600) 50%, transparent);
+}
+
+.document-row-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.document-row-type {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-surface-100);
+}
+
+.document-row-date {
+  font-size: 0.75rem;
+  color: var(--color-surface-400);
+}
+
+.document-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.btn-renew {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.3125rem 0.625rem;
+  border-radius: 0.375rem;
+  border: 1px solid color-mix(in srgb, var(--color-status-expired) 40%, transparent);
+  background-color: color-mix(in srgb, var(--color-status-expired) 12%, transparent);
+  color: #fca5a5;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.btn-renew:hover {
+  background-color: color-mix(in srgb, var(--color-status-expired) 22%, transparent);
+  border-color: color-mix(in srgb, var(--color-status-expired) 60%, transparent);
+}
+
+.btn-renew-icon {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
