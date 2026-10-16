@@ -20,6 +20,9 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  // `googleapis` utilise des modules Node natifs : on l'exclut du bundling
+  // côté serveur pour éviter les erreurs de build (Server Actions / Route Handlers).
+  serverExternalPackages: ['googleapis'],
   images: {
     remotePatterns: [
       {

@@ -44,7 +44,7 @@ export default function AccesRefusePage() {
             }}
           >
             Dans Supabase, exécutez :{' '}
-            <code style={{ color: 'var(--color-brand-300)' }}>
+            <code style={{ color: 'var(--color-brand-600)' }}>
               UPDATE public.utilisateurs SET role = &apos;ADMIN&apos; WHERE email =
               &apos;votre@email.com&apos;;
             </code>

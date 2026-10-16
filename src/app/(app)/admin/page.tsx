@@ -18,7 +18,7 @@ export default function AdminPage() {
             style={{
               width: '1.5rem',
               height: '1.5rem',
-              color: 'var(--color-brand-400)',
+              color: 'var(--color-brand-600)',
             }}
           />
           <div>
@@ -50,7 +50,7 @@ export default function AdminPage() {
               style={{
                 width: '1.25rem',
                 height: '1.25rem',
-                color: 'var(--color-brand-400)',
+                color: 'var(--color-brand-600)',
               }}
             />
             <h2

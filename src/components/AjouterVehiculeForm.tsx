@@ -6,7 +6,6 @@ import {
   UploadCloud,
   CheckCircle,
   XCircle,
-  Loader2,
   Car,
   CalendarDays,
 } from 'lucide-react'

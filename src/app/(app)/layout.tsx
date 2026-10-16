@@ -4,6 +4,9 @@ import Sidebar from '@/components/layout/Sidebar'
  * Layout du groupe (app) — toutes les pages protégées.
  * Affiche le shell avec la Sidebar à gauche et le contenu à droite.
  * Le route group (app) n'affecte pas les URLs (/ reste /, /admin reste /admin).
+ *
+ * La Sidebar résout elle-même le rôle (RBAC) : le lien « Administration »
+ * n'est rendu que pour un profil ADMIN.
  */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (

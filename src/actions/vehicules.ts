@@ -5,7 +5,14 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { calculerDatesDepuisSaisie, calculerStatut, toISODate } from '@/lib/document-logic'
 import {
+  creerAlerteDocument,
+  estGoogleCalendarConfigure,
+  supprimerAlerteDocument,
+  JOURS_ALERTE,
+} from '@/lib/google-calendar'
+import {
   DOCUMENT_TYPES,
+  DOCUMENT_TYPE_LABELS,
   type DocumentType,
   type DocumentVehicule,
   type DocumentVehiculeAvecStatut,
@@ -18,6 +25,25 @@ export type ActionState =
   | { status: 'idle' }
   | { status: 'success'; vehiculeId: string; message: string }
   | { status: 'error'; message: string }
+
+/** Résultat de la Server Action de renouvellement d'un document. */
+export type RenouvellementState =
+  | { status: 'success'; documentId: string; message: string }
+  | { status: 'error'; message: string }
+
+/** Résultat de la Server Action de suppression d'un véhicule. */
+export type SuppressionState =
+  | { status: 'success'; vehiculeId: string; message: string }
+  | { status: 'error'; message: string }
+
+/** Ligne brute de `documents_vehicule` lue lors d'un renouvellement. */
+type DocumentRenouvellementRow = {
+  id: string
+  vehicule_id: string
+  type_document: DocumentType
+  date_expiration: string | null
+  calendar_event_id: string | null
+}
 
 // ─── Noms des champs du formulaire ────────────────────────────────────────────
 // Centralise les clés pour éviter les fautes de frappe entre form et action.
@@ -156,7 +182,8 @@ export async function listerVehiculesAvecDocuments(): Promise<VehiculeAvecDocume
  *  3. Récupère l'URL publique de l'image.
  *  4. Insère le véhicule en base.
  *  5. Pour chacun des 3 types de documents, calcule les dates et insère le document.
- *  6. (TODO étape 4) Planifie une alerte Google Calendar à J-4.
+ *  6. Crée une alerte Google Calendar « journée entière » à J-4 (date_notification)
+ *     et stocke l'ID retourné dans `documents_vehicule.calendar_event_id`.
  *  7. Invalide le cache Next.js pour la page /admin.
  */
 export async function ajouterVehicule(
@@ -263,38 +290,71 @@ export async function ajouterVehicule(
     }
   })
 
-  const { error: documentsError } = await supabase
+  // On récupère les ids insérés pour pouvoir y rattacher l'événement Google.
+  const { data: documentsInseres, error: documentsError } = await supabase
     .from('documents_vehicule')
     .insert(documentsAInserer)
+    .select('id, type_document')
 
-  if (documentsError) {
+  if (documentsError || !documentsInseres) {
     console.error('[ajouterVehicule] Insert documents error:', documentsError)
     // Rollback : supprime le véhicule (les documents ne sont pas encore insérés)
     await supabase.from('vehicules').delete().eq('id', vehiculeId)
     await supabase.storage.from('images_vehicules').remove([storagePath])
     return {
       status: 'error',
-      message: `Erreur lors de l'enregistrement des documents : ${documentsError.message}`,
+      message: `Erreur lors de l'enregistrement des documents : ${documentsError?.message ?? 'Erreur inconnue'}`,
     }
   }
 
-  // ── 6. TODO: Intégration Google Calendar ─────────────────────────────────
-  // Pour chaque document, planifier une alerte à J-4 (date_notification),
-  // puis stocker l'ID retourné par l'API dans la colonne `calendar_event_id`.
-  // À implémenter à l'étape 4 avec l'API Google Calendar.
-  //
-  // Exemple de ce qui sera fait :
-  // for (const doc of documentsInseres) {
-  //   const eventId = await scheduleCalendarAlert({
-  //     vehiculeNom: nom,
-  //     typeDocument: doc.type_document,
-  //     dateNotification: doc.date_notification,
-  //   })
-  //   await supabase
-  //     .from('documents_vehicule')
-  //     .update({ calendar_event_id: eventId })
-  //     .eq('id', doc.id)
-  // }
+  // ── 6. Alertes Google Calendar (J-4) ─────────────────────────────────────
+  // Pour chaque document inséré, on crée l'événement « journée entière » puis
+  // on stocke l'ID retourné dans `calendar_event_id`.
+  // Un échec Google n'annule JAMAIS l'ajout du véhicule : on logge et on continue.
+  if (!estGoogleCalendarConfigure()) {
+    console.warn(
+      '[ajouterVehicule] Google Calendar non configuré — aucun rappel créé ' +
+        '(voir docs/google-calendar-setup.md).',
+    )
+  } else {
+    const resultats = await Promise.allSettled(
+      documentsInseres.map(async (doc) => {
+        const type = doc.type_document as DocumentType
+        const { dateExpiration, dateNotification } = calculerDatesDepuisSaisie(datesSaisie[type])
+
+        const { eventId, error } = await creerAlerteDocument({
+          vehiculeNom: nom,
+          typeDocument: type,
+          dateExpiration,
+          dateNotification,
+        })
+
+        if (error || !eventId) {
+          console.warn(
+            `[ajouterVehicule] Alerte Google non créée pour ${type} (${nom}) : ${error ?? 'ID manquant'}`,
+          )
+          return null
+        }
+
+        const { error: updateError } = await supabase
+          .from('documents_vehicule')
+          .update({ calendar_event_id: eventId })
+          .eq('id', doc.id)
+
+        if (updateError) {
+          console.error('[ajouterVehicule] Échec du stockage de calendar_event_id :', updateError)
+        }
+
+        return eventId
+      }),
+    )
+
+    const nbCrees = resultats.filter((r) => r.status === 'fulfilled' && r.value).length
+    console.info(
+      `[ajouterVehicule] Google Calendar : ${nbCrees}/${documentsInseres.length} alerte(s) ` +
+        `créée(s) pour « ${nom} ».`,
+    )
+  }
 
   // ── 7. Invalide le cache et retourne le succès ────────────────────────────
 
@@ -305,5 +365,308 @@ export async function ajouterVehicule(
     status: 'success',
     vehiculeId,
     message: `Véhicule "${nom}" ajouté avec succès, 3 documents enregistrés.`,
+  }
+}
+
+/**
+ * Server Action — Renouvelle un document existant.
+ *
+ * Séquence stricte :
+ *  1. Charge le document courant (+ nom du véhicule) depuis Supabase.
+ *  2. Supprime l'ancien rappel Google Calendar (`calendar_event_id`) s'il existe.
+ *  3. Calcule la nouvelle `date_notification` (J-4) depuis la nouvelle expiration.
+ *  4. Crée le nouvel événement Google Calendar.
+ *  5. Met à jour `date_expiration`, `date_notification` et `calendar_event_id`.
+ *  6. `revalidatePath('/')` pour rafraîchir le tableau de bord.
+ *
+ * La fonction ne lève jamais d'exception : toutes les erreurs sont capturées
+ * et renvoyées sous forme de `{ status: 'error', message }`.
+ */
+export async function renouvelerDocument(
+  documentId: string,
+  nouvelleDateExpiration: string,
+): Promise<RenouvellementState> {
+  // ── Validation des entrées ─────────────────────────────────────────────────
+  if (!documentId) {
+    return { status: 'error', message: "Identifiant de document manquant." }
+  }
+
+  const dateExpiration = new Date(nouvelleDateExpiration)
+  if (!nouvelleDateExpiration || isNaN(dateExpiration.getTime())) {
+    return { status: 'error', message: "La nouvelle date d'expiration est invalide." }
+  }
+
+  try {
+    const supabase = await createClient()
+
+    // ── 1. Récupérer le document actuel ──────────────────────────────────────
+    const { data: document, error: fetchError } = await supabase
+      .from('documents_vehicule')
+      .select('id, vehicule_id, type_document, date_expiration, calendar_event_id')
+      .eq('id', documentId)
+      .single<DocumentRenouvellementRow>()
+
+    if (fetchError || !document) {
+      console.error('[renouvelerDocument] Document introuvable :', fetchError)
+      return {
+        status: 'error',
+        message: `Document introuvable : ${fetchError?.message ?? 'inconnu'}`,
+      }
+    }
+
+    // Nom du véhicule associé (nécessaire pour le titre / la description).
+    const { data: vehicule, error: vehiculeError } = await supabase
+      .from('vehicules')
+      .select('nom')
+      .eq('id', document.vehicule_id)
+      .single<{ nom: string }>()
+
+    if (vehiculeError || !vehicule) {
+      console.error('[renouvelerDocument] Véhicule introuvable :', vehiculeError)
+      return {
+        status: 'error',
+        message: `Véhicule introuvable : ${vehiculeError?.message ?? 'inconnu'}`,
+      }
+    }
+
+    const typeDocument = document.type_document
+
+    // ── 2. Supprimer l'ancienne alerte Google Calendar ───────────────────────
+    // Un échec de suppression (événement déjà absent, agenda inaccessible…)
+    // ne doit pas bloquer le renouvellement : on logge et on continue.
+    if (document.calendar_event_id) {
+      const supprime = await supprimerAlerteDocument(document.calendar_event_id)
+      if (!supprime) {
+        console.warn(
+          `[renouvelerDocument] Ancien événement non supprimé : ${document.calendar_event_id}`,
+        )
+      }
+    }
+
+    // ── 3. Calculer la nouvelle date de notification (J-4) ───────────────────
+    const dateNotification = new Date(dateExpiration)
+    dateNotification.setDate(dateNotification.getDate() - JOURS_ALERTE)
+
+    // ── 4. Créer la nouvelle alerte Google Calendar ──────────────────────────
+    let nouveauCalendarEventId: string | null = null
+
+    if (estGoogleCalendarConfigure()) {
+      const { eventId, error: calendarError } = await creerAlerteDocument({
+        vehiculeNom: vehicule.nom,
+        typeDocument,
+        dateExpiration,
+        dateNotification,
+      })
+
+      if (calendarError) {
+        console.warn('[renouvelerDocument] Nouvelle alerte non créée :', calendarError)
+      }
+      nouveauCalendarEventId = eventId
+    } else {
+      console.warn(
+        '[renouvelerDocument] Google Calendar non configuré — alerte ignorée ' +
+          '(voir docs/google-calendar-setup.md).',
+      )
+    }
+
+    // ── 5. Mettre à jour la ligne en base ────────────────────────────────────
+    const { error: updateError } = await supabase
+      .from('documents_vehicule')
+      .update({
+        date_expiration: toISODate(dateExpiration),
+        date_notification: toISODate(dateNotification),
+        calendar_event_id: nouveauCalendarEventId,
+      })
+      .eq('id', documentId)
+
+    if (updateError) {
+      console.error('[renouvelerDocument] Échec de la mise à jour :', updateError)
+      return {
+        status: 'error',
+        message: `Erreur lors du renouvellement : ${updateError.message}`,
+      }
+    }
+
+    // ── 6. Rafraîchir le tableau de bord ─────────────────────────────────────
+    revalidatePath('/')
+    revalidatePath('/admin')
+
+    const label = DOCUMENT_TYPE_LABELS[typeDocument] ?? typeDocument
+    return {
+      status: 'success',
+      documentId,
+      message: `Document « ${label} » renouvelé jusqu'au ${dateExpiration.toLocaleDateString(
+        'fr-FR',
+        { day: 'numeric', month: 'long', year: 'numeric' },
+      )}.`,
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error('[renouvelerDocument] Erreur inattendue :', message)
+    return { status: 'error', message: `Erreur inattendue : ${message}` }
+  }
+}
+
+// ─── Suppression d'un véhicule ────────────────────────────────────────────────
+
+/** Bucket Supabase Storage qui contient les photos des véhicules. */
+const BUCKET_IMAGES = 'images_vehicules'
+
+/** Ligne brute de `vehicules` (avec ses documents) lue lors d'une suppression. */
+type VehiculeSuppressionRow = {
+  id: string
+  nom: string
+  image_url: string | null
+  documents_vehicule: { id: string; calendar_event_id: string | null }[] | null
+}
+
+/**
+ * Extrait le chemin interne au bucket à partir d'une URL publique Supabase.
+ *
+ * Ex : `https://xxx.supabase.co/storage/v1/object/public/images_vehicules/vehicules/42.jpg`
+ *      → `vehicules/42.jpg`
+ *
+ * Gère aussi les URLs signées (`/object/sign/`) et ignore la query string.
+ * Renvoie `null` si l'URL n'appartient pas au bucket (ex. URL externe).
+ */
+function extraireCheminImage(imageUrl: string | null): string | null {
+  if (!imageUrl) return null
+
+  const marqueur = `/${BUCKET_IMAGES}/`
+  const index = imageUrl.indexOf(marqueur)
+  if (index === -1) return null
+
+  const chemin = imageUrl.slice(index + marqueur.length).split('?')[0]
+  return chemin || null
+}
+
+/**
+ * Server Action — Supprime un véhicule et TOUTES ses données associées.
+ *
+ * Séquence :
+ *  0. Vérifie que l'appelant est bien ADMIN (sécurité — le masquage DOM ne suffit pas).
+ *  A. Charge le véhicule + ses documents (image_url, calendar_event_id).
+ *  B. Supprime les alertes Google Calendar associées (best-effort).
+ *  C. Supprime la photo du bucket Supabase Storage (best-effort).
+ *  D. Supprime les documents puis le véhicule en base.
+ *  E. `revalidatePath('/')` pour rafraîchir l'interface.
+ *
+ * Ne lève jamais d'exception : renvoie `{ status: 'error', message }`.
+ */
+export async function supprimerVehicule(vehiculeId: string): Promise<SuppressionState> {
+  if (!vehiculeId) {
+    return { status: 'error', message: 'Identifiant de véhicule manquant.' }
+  }
+
+  try {
+    const supabase = await createClient()
+
+    // ── 0. Autorisation : réservé aux administrateurs ────────────────────────
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return { status: 'error', message: 'Vous devez être connecté pour effectuer cette action.' }
+    }
+
+    const { data: profil, error: roleError } = await supabase
+      .from('utilisateurs')
+      .select('role')
+      .eq('id', user.id)
+      .single<{ role: string }>()
+
+    if (roleError || profil?.role !== 'ADMIN') {
+      return { status: 'error', message: 'Action réservée aux administrateurs.' }
+    }
+
+    // ── A. Récupérer le véhicule et ses documents ────────────────────────────
+    const { data: vehicule, error: fetchError } = await supabase
+      .from('vehicules')
+      .select('id, nom, image_url, documents_vehicule ( id, calendar_event_id )')
+      .eq('id', vehiculeId)
+      .single<VehiculeSuppressionRow>()
+
+    if (fetchError || !vehicule) {
+      console.error('[supprimerVehicule] Véhicule introuvable :', fetchError)
+      return {
+        status: 'error',
+        message: `Véhicule introuvable : ${fetchError?.message ?? 'inconnu'}`,
+      }
+    }
+
+    const documents = vehicule.documents_vehicule ?? []
+
+    // ── B. Nettoyer Google Calendar (best-effort) ────────────────────────────
+    const eventIds = documents
+      .map((doc) => doc.calendar_event_id)
+      .filter((id): id is string => Boolean(id))
+
+    if (eventIds.length > 0) {
+      const resultats = await Promise.allSettled(
+        eventIds.map((eventId) => supprimerAlerteDocument(eventId)),
+      )
+      const nbSupprimes = resultats.filter((r) => r.status === 'fulfilled' && r.value).length
+      console.info(
+        `[supprimerVehicule] Google Calendar : ${nbSupprimes}/${eventIds.length} ` +
+          `événement(s) supprimé(s) pour « ${vehicule.nom} ».`,
+      )
+    }
+
+    // ── C. Supprimer la photo du Storage (best-effort) ───────────────────────
+    const cheminImage = extraireCheminImage(vehicule.image_url)
+    if (cheminImage) {
+      const { error: storageError } = await supabase.storage
+        .from(BUCKET_IMAGES)
+        .remove([cheminImage])
+
+      if (storageError) {
+        console.error('[supprimerVehicule] Échec de la suppression de l\'image :', storageError)
+      }
+    }
+
+    // ── D. Supprimer les documents puis le véhicule ──────────────────────────
+    // On supprime explicitement les documents d'abord : garantit l'absence
+    // d'orphelins même si la clé étrangère n'est pas en `ON DELETE CASCADE`.
+    const { error: documentsDeleteError } = await supabase
+      .from('documents_vehicule')
+      .delete()
+      .eq('vehicule_id', vehiculeId)
+
+    if (documentsDeleteError) {
+      console.warn(
+        '[supprimerVehicule] Suppression des documents échouée — on s\'appuie sur la ' +
+          'cascade de la clé étrangère :',
+        documentsDeleteError,
+      )
+    }
+
+    const { error: deleteError } = await supabase
+      .from('vehicules')
+      .delete()
+      .eq('id', vehiculeId)
+
+    if (deleteError) {
+      console.error('[supprimerVehicule] Échec de la suppression du véhicule :', deleteError)
+      return {
+        status: 'error',
+        message: `Erreur lors de la suppression : ${deleteError.message}`,
+      }
+    }
+
+    // ── E. Rafraîchir l'interface ────────────────────────────────────────────
+    revalidatePath('/')
+    revalidatePath('/admin')
+
+    return {
+      status: 'success',
+      vehiculeId,
+      message: `Véhicule « ${vehicule.nom} » et ses documents ont été supprimés.`,
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error('[supprimerVehicule] Erreur inattendue :', message)
+    return { status: 'error', message: `Erreur inattendue : ${message}` }
   }
 }

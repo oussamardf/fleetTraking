@@ -10,31 +10,31 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  /* ── Palette principale (bleu ardoise profond) ───────────────── */
-  --color-brand-50:  #eef2ff;
-  --color-brand-100: #e0e7ff;
-  --color-brand-200: #c7d2fe;
-  --color-brand-300: #a5b4fc;
-  --color-brand-400: #818cf8;
-  --color-brand-500: #6366f1;
-  --color-brand-600: #4f46e5;
-  --color-brand-700: #4338ca;
-  --color-brand-800: #3730a3;
-  --color-brand-900: #312e81;
+  /* ── Accent unique : bleu sobre ──────────────────────────────── */
+  --color-brand-50:  #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
 
-  /* ── Surface (dark mode par défaut) ─────────────────────────── */
-  --color-surface-900: #0f0f1a;
-  --color-surface-800: #16162a;
-  --color-surface-700: #1e1e35;
-  --color-surface-600: #2a2a45;
-  --color-surface-400: #5a5a8a;
-  --color-surface-200: #a0a0c0;
-  --color-surface-100: #e8e8f0;
+  /* ── Surfaces neutres (thème clair) ──────────────────────────── */
+  --color-surface-900: #f1f5f9;  /* fond de page        */
+  --color-surface-800: #ffffff;  /* cartes / sidebar    */
+  --color-surface-700: #f8fafc;  /* fonds secondaires   */
+  --color-surface-600: #e2e8f0;  /* bordures            */
+  --color-surface-400: #64748b;  /* texte atténué       */
+  --color-surface-200: #334155;  /* texte secondaire    */
+  --color-surface-100: #0f172a;  /* texte principal     */
 
-  /* ── Statuts document ────────────────────────────────────────── */
-  --color-status-valid:   #10b981;  /* emerald-500 */
-  --color-status-alert:   #f59e0b;  /* amber-500  */
-  --color-status-expired: #ef4444;  /* red-500    */
+  /* ── Statuts — les SEULES couleurs sémantiques ───────────────── */
+  --color-status-valid:   #16a34a;  /* vert  */
+  --color-status-alert:   #d97706;  /* ambre */
+  --color-status-expired: #dc2626;  /* rouge */
 }
 
 /* ==========================================================================
@@ -79,7 +79,8 @@ body {
   width: 260px;
   flex-shrink: 0;
   background-color: var(--color-surface-800);
-  border-right: 1px solid color-mix(in srgb, var(--color-brand-500) 15%, transparent);
+  /* Propriété logique : la bordure suit la direction (droite en LTR, gauche en RTL). */
+  border-inline-end: 1px solid var(--color-surface-600);
   padding: 1.5rem 1rem;
   gap: 1.5rem;
   overflow-y: auto;
@@ -91,7 +92,7 @@ body {
   align-items: center;
   gap: 0.75rem;
   padding: 0 0.5rem 1rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-surface-600) 60%, transparent);
+  border-bottom: 1px solid var(--color-surface-600);
 }
 
 .sidebar-logo {
@@ -101,9 +102,8 @@ body {
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 0.625rem;
-  background: linear-gradient(135deg, var(--color-brand-600), var(--color-brand-400));
+  background: var(--color-brand-600);
   flex-shrink: 0;
-  box-shadow: 0 0 16px color-mix(in srgb, var(--color-brand-500) 40%, transparent);
 }
 
 .sidebar-logo-icon {
@@ -184,19 +184,21 @@ body {
 }
 
 .sidebar-nav-item--active {
-  background-color: color-mix(in srgb, var(--color-brand-500) 18%, transparent);
-  color: var(--color-brand-300);
+  background-color: color-mix(in srgb, var(--color-brand-500) 12%, transparent);
+  color: var(--color-brand-700);
 }
 
 .sidebar-nav-item--active::before {
   content: '';
   position: absolute;
-  left: 0;
+  /* inset-inline-start : côté « début » de la ligne (gauche en LTR, droite en RTL). */
+  inset-inline-start: 0;
   top: 20%;
   height: 60%;
   width: 3px;
-  border-radius: 0 2px 2px 0;
-  background: var(--color-brand-400);
+  border-start-end-radius: 2px;
+  border-end-end-radius: 2px;
+  background: var(--color-brand-600);
 }
 
 .sidebar-nav-icon {
@@ -221,14 +223,17 @@ body {
   width: 0.875rem;
   height: 0.875rem;
   flex-shrink: 0;
-  color: var(--color-brand-400);
-  opacity: 0.7;
+  color: var(--color-brand-500);
+  opacity: 0.8;
 }
 
 /* — Pied sidebar ————————————————————————— */
 .sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
   padding-top: 1rem;
-  border-top: 1px solid color-mix(in srgb, var(--color-surface-600) 60%, transparent);
+  border-top: 1px solid var(--color-surface-600);
 }
 
 .sidebar-logout-btn {
@@ -245,18 +250,71 @@ body {
   color: var(--color-surface-400);
   cursor: pointer;
   transition: background-color 150ms ease, color 150ms ease;
-  text-align: left;
+  text-align: start;
 }
 
 .sidebar-logout-btn:hover {
-  background-color: color-mix(in srgb, #ef4444 12%, transparent);
-  color: #f87171;
+  background-color: color-mix(in srgb, var(--color-status-expired) 10%, transparent);
+  color: var(--color-status-expired);
 }
 
 .sidebar-logout-icon {
   width: 1.125rem;
   height: 1.125rem;
   flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Sélecteur de langue (FR / AR)
+   ========================================================================== */
+
+.lang-switcher {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.5rem;
+  background-color: color-mix(in srgb, var(--color-surface-700) 60%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-surface-600) 50%, transparent);
+}
+
+.lang-switcher-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+  color: var(--color-surface-400);
+}
+
+.lang-switcher-options {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.lang-switcher-btn {
+  flex: 1;
+  min-height: 2rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  border: none;
+  background: transparent;
+  color: var(--color-surface-200);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.lang-switcher-btn:hover {
+  background-color: color-mix(in srgb, var(--color-brand-500) 12%, transparent);
+  color: var(--color-surface-100);
+}
+
+.lang-switcher-btn--active {
+  background-color: var(--color-brand-600);
+  color: #fff;
 }
 
 /* ==========================================================================
@@ -274,7 +332,7 @@ body {
 /* En-tête de page */
 .page-header {
   padding: 2rem 2.5rem 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-surface-600) 40%, transparent);
+  border-bottom: 1px solid var(--color-surface-600);
   padding-bottom: 1.5rem;
 }
 
@@ -337,15 +395,15 @@ body {
 
 .card {
   background-color: var(--color-surface-800);
-  border: 1px solid color-mix(in srgb, var(--color-surface-600) 50%, transparent);
+  border: 1px solid var(--color-surface-600);
   border-radius: 0.75rem;
   padding: 1.5rem;
   transition: border-color 200ms ease, box-shadow 200ms ease;
 }
 
 .card:hover {
-  border-color: color-mix(in srgb, var(--color-brand-500) 30%, transparent);
-  box-shadow: 0 4px 24px color-mix(in srgb, var(--color-brand-900) 30%, transparent);
+  border-color: color-mix(in srgb, var(--color-brand-500) 35%, transparent);
+  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.06);
 }
 
 /* ==========================================================================
@@ -387,7 +445,7 @@ body {
   font-family: inherit;
   transition: border-color 150ms ease, box-shadow 150ms ease;
   outline: none;
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 .form-input::placeholder {
@@ -444,7 +502,7 @@ body {
 .form-file-icon {
   width: 2rem;
   height: 2rem;
-  color: var(--color-brand-400);
+  color: var(--color-brand-500);
 }
 
 .form-file-text {
@@ -453,7 +511,7 @@ body {
 }
 
 .form-file-text strong {
-  color: var(--color-brand-300);
+  color: var(--color-brand-600);
 }
 
 .form-file-hint {
@@ -504,8 +562,8 @@ body {
 }
 
 .form-alert--error {
-  background-color: color-mix(in srgb, var(--color-status-expired) 12%, transparent);
-  color: #f87171;
+  background-color: color-mix(in srgb, var(--color-status-expired) 10%, transparent);
+  color: var(--color-status-expired);
   border: 1px solid color-mix(in srgb, var(--color-status-expired) 25%, transparent);
 }
 
@@ -524,19 +582,19 @@ body {
   padding: 0.75rem 1.5rem;
   border-radius: 0.5rem;
   border: none;
-  background: linear-gradient(135deg, var(--color-brand-600), var(--color-brand-500));
+  background: var(--color-brand-600);
   color: #fff;
   font-size: 0.875rem;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  transition: opacity 150ms ease, box-shadow 150ms ease, transform 100ms ease;
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-brand-600) 40%, transparent);
+  transition: background-color 150ms ease, box-shadow 150ms ease, transform 100ms ease;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 
 .btn-primary:hover:not(:disabled) {
-  opacity: 0.92;
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--color-brand-600) 50%, transparent);
+  background: var(--color-brand-700);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
   transform: translateY(-1px);
 }
 
@@ -590,12 +648,10 @@ body {
   width: 100%;
   max-width: 420px;
   background-color: var(--color-surface-800);
-  border: 1px solid color-mix(in srgb, var(--color-surface-600) 50%, transparent);
+  border: 1px solid var(--color-surface-600);
   border-radius: 1rem;
   padding: 2.5rem;
-  box-shadow:
-    0 4px 24px rgba(0, 0, 0, 0.3),
-    0 0 80px color-mix(in srgb, var(--color-brand-900) 15%, transparent);
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
 }
 
 .login-header {
@@ -614,8 +670,7 @@ body {
   width: 3.5rem;
   height: 3.5rem;
   border-radius: 0.875rem;
-  background: linear-gradient(135deg, var(--color-brand-600), var(--color-brand-400));
-  box-shadow: 0 0 24px color-mix(in srgb, var(--color-brand-500) 40%, transparent);
+  background: var(--color-brand-600);
 }
 
 .login-logo-icon {
@@ -794,8 +849,8 @@ body {
   padding: 0.3125rem 0.625rem;
   border-radius: 0.375rem;
   border: 1px solid color-mix(in srgb, var(--color-status-expired) 40%, transparent);
-  background-color: color-mix(in srgb, var(--color-status-expired) 12%, transparent);
-  color: #fca5a5;
+  background-color: color-mix(in srgb, var(--color-status-expired) 10%, transparent);
+  color: var(--color-status-expired);
   font-size: 0.6875rem;
   font-weight: 600;
   font-family: inherit;
@@ -812,5 +867,101 @@ body {
 .btn-renew-icon {
   width: 0.75rem;
   height: 0.75rem;
+}
+
+/* ==========================================================================
+   RTL (arabe) — ajustements directionnels
+   ========================================================================== */
+
+/* Police arabe lisible : Geist ne couvre pas les glyphes arabes. */
+[dir='rtl'] body {
+  font-family: 'SF Arabic', 'Geeza Pro', 'Noto Sans Arabic', 'Segoe UI', Tahoma,
+    system-ui, sans-serif;
+}
+
+/* Chevron de navigation : pointe vers le « début » de la ligne. */
+[dir='rtl'] .sidebar-nav-chevron {
+  transform: scaleX(-1);
+}
+
+/* Micro-déplacement du survol : suit la direction. */
+[dir='rtl'] .sidebar-nav-item:hover .sidebar-nav-icon {
+  transform: translateX(-1px);
+}
+
+/* ==========================================================================
+   Shell responsive (mobile) — la sidebar devient une barre supérieure
+   ========================================================================== */
+
+@media (max-width: 767px) {
+  .app-shell {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-inline-end: none;
+    border-bottom: 1px solid var(--color-surface-600);
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .sidebar-header {
+    border-bottom: none;
+    padding: 0;
+  }
+
+  .sidebar-brand {
+    display: none;
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .sidebar-section-label {
+    display: none;
+  }
+
+  .sidebar-nav-list {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .sidebar-nav-item {
+    white-space: nowrap;
+  }
+
+  .sidebar-footer {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    padding-top: 0;
+    border-top: none;
+  }
+
+  .sidebar-logout-btn {
+    width: auto;
+    padding: 0.5rem;
+  }
+
+  .sidebar-logout-btn span {
+    display: none;
+  }
+
+  .page-body {
+    padding: 1.25rem 1rem;
+  }
+
+  .page-header {
+    padding: 1.25rem 1rem 1rem;
+  }
 }
 
